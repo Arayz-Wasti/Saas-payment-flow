@@ -1,0 +1,19 @@
+# Django Core
+Django>=4.2,<5.0
+djangorestframework>=3.14,<4.0
+django-cors-headers>=4.3,<5.0
+
+# Authentication
+djangorestframework-simplejwt>=5.3,<6.0
+
+# Database
+psycopg2-binary>=2.9,<3.0
+
+# Payments
+stripe>=7.0,<8.0
+
+# Configuration
+python-decouple>=3.8,<4.0
+
+# Production Server
+gunicorn>=21.2,<23.0
