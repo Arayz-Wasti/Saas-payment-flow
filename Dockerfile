@@ -29,9 +29,17 @@ COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
 COPY . .
 
-# Collect static files
-RUN python manage.py collectstatic --noinput --settings=config.settings
+# Create static directory to avoid errors
+RUN mkdir -p static
+
+# Collect static files (Mock secrets to allow build to succeed without .env)
+RUN DJANGO_SECRET_KEY=collectstatic-only \
+    DATABASE_URL=sqlite:///:memory: \
+    STRIPE_SECRET_KEY=none \
+    STRIPE_PUBLIC_KEY=none \
+    STRIPE_WEBHOOK_SECRET=none \
+    python manage.py collectstatic --noinput
 
 EXPOSE 8000
 
-CMD ["gunicorn", "--config", "gunicorn.conf.py", "config.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--config", "gunicorn.conf.py", "config.wsgi:application"]

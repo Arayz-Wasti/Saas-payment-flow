@@ -7,6 +7,8 @@ import sys
 from datetime import timedelta
 from pathlib import Path
 
+import dj_database_url
+
 from decouple import Csv, config
 
 # ─── Base Directory ───────────────────────────────────────────────
@@ -15,7 +17,7 @@ BASE_DIR: Path = Path(__file__).resolve().parent.parent
 # ─── Security ─────────────────────────────────────────────────────
 SECRET_KEY: str = config('DJANGO_SECRET_KEY')
 DEBUG: bool = config('DJANGO_DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS: list[str] = config('DJANGO_ALLOWED_HOSTS', default='localhost', cast=Csv())
+ALLOWED_HOSTS: list[str] = config('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1,*.railway.app', cast=Csv())
 
 # ─── Application Definition ──────────────────────────────────────
 INSTALLED_APPS: list[str] = [
@@ -43,6 +45,7 @@ INSTALLED_APPS: list[str] = [
 MIDDLEWARE: list[str] = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -69,14 +72,20 @@ TEMPLATES: list[dict] = [
     },
 ]
 
-WSGI_APPLICATION: str = 'config.wsgi.application'
-
 # ─── Database Configuration ──────────────────────────────────────
 DB_ENGINE = config('DB_ENGINE', default='sqlite')
 
-if DB_ENGINE == 'postgresql':
+if DB_ENGINE == 'postgresql' or config('DATABASE_URL', default=None):
     DATABASES = {
-        'default': {
+        'default': dj_database_url.config(
+            default=config('DATABASE_URL', default=''),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+    # Fallback to explicit env vars if DATABASE_URL is somehow not parsed correctly but vars are there
+    if not DATABASES['default'].get('NAME'):
+         DATABASES['default'] = {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': config('DB_NAME', default='saas_db'),
             'USER': config('DB_USER', default='postgres'),
@@ -84,7 +93,6 @@ if DB_ENGINE == 'postgresql':
             'HOST': config('DB_HOST', default='localhost'),
             'PORT': config('DB_PORT', default='5432'),
         }
-    }
 else:
     DATABASES = {
         'default': {
@@ -112,7 +120,20 @@ USE_TZ: bool = True
 
 # ─── Static Files ────────────────────────────────────────────────
 STATIC_URL: str = '/static/'
-STATIC_ROOT: str = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT: os.PathLike = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS: list[str] = [os.path.join(BASE_DIR, 'static')]
+# Ensure the directory exists
+os.makedirs(os.path.join(BASE_DIR, 'static'), exist_ok=True)
+
+# WhiteNoise Configuration
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # ─── Default Primary Key ─────────────────────────────────────────
 DEFAULT_AUTO_FIELD: str = 'django.db.models.BigAutoField'
@@ -151,3 +172,15 @@ STRIPE_WEBHOOK_SECRET: str = config('STRIPE_WEBHOOK_SECRET', default='')
 
 # ─── Frontend URL ────────────────────────────────────────────────
 FRONTEND_URL: str = config('FRONTEND_URL', default='http://localhost:3000')
+
+# ─── Production Security Settings ──────────────────────────────────
+if not DEBUG:
+    SECURE_SSL_REDIRECT = config('DJANGO_SECURE_SSL_REDIRECT', default=True, cast=bool)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
