@@ -2,7 +2,7 @@
  * API Wrapper for SaaS Backend
  */
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = 'https://saas-payment-flow-production.up.railway.app/api';
 
 const api = {
     /**

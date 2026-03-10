@@ -5,6 +5,9 @@ from django.urls import include, path
 urlpatterns: list = [
     path('admin/', admin.site.urls),
 
+    # API Root / Discovery
+    path('', include('apps.core.urls')),
+
     # API endpoints
     path('api/users/', include('apps.users.urls')),
     path('api/subscriptions/', include('apps.subscriptions.urls')),
