@@ -59,7 +59,7 @@ ROOT_URLCONF: str = 'config.urls'
 TEMPLATES: list[dict] = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -71,6 +71,8 @@ TEMPLATES: list[dict] = [
         },
     },
 ]
+
+WSGI_APPLICATION: str = 'config.wsgi.application'
 
 # ─── Database Configuration ──────────────────────────────────────
 DB_ENGINE = config('DB_ENGINE', default='sqlite')

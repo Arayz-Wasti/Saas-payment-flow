@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - SaaSFlow</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'frontend/css/style.css' %}">
+    <script src="{% static 'frontend/js/api.js' %}"></script>
+    <script src="{% static 'frontend/js/app.js' %}"></script>
+    <script>
+        if (!localStorage.getItem('access_token')) {
+            window.location.replace('/login/');
+        }
+    </script>
+    <style>
+        .profile-card {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .profile-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .profile-info h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .profile-info p {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            padding: 1.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--color-text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-active {
+            background: rgba(16, 185, 129, 0.15);
+            color: #6ee7b7;
+        }
+
+        .badge-free {
+            background: rgba(148, 163, 184, 0.15);
+            color: #94a3b8;
+        }
+
+        .badge-trialing {
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .action-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .toast {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            z-index: 999;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #6ee7b7;
+            font-weight: 500;
+            animation: slideIn 0.3s ease;
+            display: none;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="container nav-wrap">
+            <a href="/" class="logo">SaaSFlow.</a>
+            <nav id="nav-auth"></nav>
+        </div>
+    </header>
+
+    <div id="toast" class="toast"></div>
+
+    <main class="container" style="max-width: 900px; padding: 3rem 1.5rem;">
+        <h2 style="font-size: 2rem; margin-bottom: 2rem;">Dashboard</h2>
+
+        <!-- User Profile Card -->
+        <div class="glass-card" style="margin-bottom: 2rem;">
+            <div class="profile-card">
+                <div class="profile-avatar" id="ui-avatar">?</div>
+                <div class="profile-info">
+                    <h3 id="ui-company">Loading...</h3>
+                    <p id="ui-email">...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="glass-card stat-card">
+                <div class="stat-label">Current Plan</div>
+                <div class="stat-value" id="ui-plan">—</div>
+            </div>
+            <div class="glass-card stat-card">
+                <div class="stat-label">Subscription Status</div>
+                <div class="stat-value" id="ui-status"><span class="badge badge-free">Free Tier</span></div>
+            </div>
+            <div class="glass-card stat-card">
+                <div class="stat-label">Next Billing Date</div>
+                <div class="stat-value" id="ui-billing">—</div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="glass-card" style="margin-bottom: 2rem;">
+            <h4 class="section-title">Quick Actions</h4>
+            <div class="action-row">
+                <button class="btn btn-primary hide" id="btn-portal" onclick="openBillingPortal()">Manage
+                    Billing</button>
+                <button class="btn btn-primary hide" id="btn-upgrade"
+                    onclick="window.location.href='/#pricing'">Choose a Plan</button>
+            </div>
+        </div>
+
+        <!-- Premium Content -->
+        <div class="glass-card">
+            <h4 class="section-title">Premium Application Data</h4>
+
+            <div id="data-loading" style="text-align: center; padding: 2rem; color: var(--color-text-secondary);">
+                <span class="spinner"></span> Verifying access...
+            </div>
+
+            <div id="data-locked" class="hide" style="text-align: center; padding: 3rem 1rem;">
+                <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    style="color: var(--color-text-secondary); margin-bottom: 1rem;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+                    </path>
+                </svg>
+                <h4>Access Denied</h4>
+                <p style="color: var(--color-text-secondary); margin: 0.5rem 0 1.5rem;">You need an active subscription
+                    to view this data.</p>
+                <button class="btn btn-primary" onclick="window.location.href='/#pricing'">View Plans</button>
+            </div>
+
+            <div id="data-unlocked" class="hide"></div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', initDashboard);
+
+        async function initDashboard() {
+            // Step 1: If redirected from Stripe, verify the checkout first
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionId = urlParams.get('session_id');
+
+            if (sessionId) {
+                showToast('Verifying your payment...');
+                try {
+                    const result = await window.api.verifyCheckout(sessionId);
+                    if (result.status === 'success') {
+                        showToast(`Payment confirmed! You are now on the ${result.subscription.plan_name} plan.`);
+                    }
+                } catch (err) {
+                    console.error('Checkout verification failed:', err);
+                }
+                // Clean URL
+                window.history.replaceState({}, '', '/dashboard/');
+            }
+
+            // Step 2: Fetch user profile
+            try {
+                const user = await window.api.getUserProfile();
+                const initials = (user.company_name || user.email || '?').substring(0, 2).toUpperCase();
+                document.getElementById('ui-avatar').textContent = initials;
+                document.getElementById('ui-company').textContent = user.company_name || 'My Account';
+                document.getElementById('ui-email').textContent = user.email;
+            } catch (err) {
+                console.error('Profile load failed:', err);
+            }
+
+            // Step 3: Fetch subscription status
+            try {
+                const sub = await window.api.getSubscriptionStatus();
+
+                if (sub.has_subscription && sub.is_valid) {
+                    document.getElementById('ui-plan').textContent = sub.plan_name;
+
+                    const badgeClass = sub.status === 'trialing' ? 'badge-trialing' : 'badge-active';
+                    const badgeText = sub.status === 'trialing' ? 'Trial' : 'Active';
+                    document.getElementById('ui-status').innerHTML = `<span class="badge ${badgeClass}">${badgeText}</span>`;
+
+                    const endDate = new Date(sub.current_period_end);
+                    document.getElementById('ui-billing').textContent = endDate.toLocaleDateString('en-US', {
+                        month: 'short', day: 'numeric', year: 'numeric'
+                    });
+
+                    document.getElementById('btn-portal').classList.remove('hide');
+                } else {
+                    document.getElementById('ui-plan').textContent = 'Free';
+                    document.getElementById('ui-status').innerHTML = '<span class="badge badge-free">Free Tier</span>';
+                    document.getElementById('ui-billing').textContent = '—';
+                    document.getElementById('btn-upgrade').classList.remove('hide');
+                }
+            } catch (err) {
+                console.error('Subscription status failed:', err);
+                document.getElementById('btn-upgrade').classList.remove('hide');
+            }
+
+            // Step 4: Try loading premium data
+            try {
+                const data = await window.api.getPremiumData();
+                document.getElementById('data-loading').classList.add('hide');
+                const unlocked = document.getElementById('data-unlocked');
+                unlocked.classList.remove('hide');
+                unlocked.innerHTML = `
+                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 1.5rem; border-radius: 8px;">
+                        <h4 style="color: #6ee7b7; margin-bottom: 0.5rem;">🎉 ${data.message}</h4>
+                        <p>${data.data}</p>
+                    </div>
+                `;
+            } catch (err) {
+                document.getElementById('data-loading').classList.add('hide');
+                document.getElementById('data-locked').classList.remove('hide');
+            }
+        }
+
+        async function openBillingPortal() {
+            const btn = document.getElementById('btn-portal');
+            setButtonLoading(btn, true, 'Opening...');
+            try {
+                const res = await window.api.createBillingPortal();
+                window.location.href = res.portal_url;
+            } catch (err) {
+                alert(err.message || 'Failed to open billing portal');
+                setButtonLoading(btn, false);
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 5000);
+        }
+    </script>
+</body>
+
+</html>

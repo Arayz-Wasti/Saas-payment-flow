@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS Payment - Premium Infrastructure</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'frontend/css/style.css' %}">
+    <script src="{% static 'frontend/js/api.js' %}"></script>
+    <script src="{% static 'frontend/js/app.js' %}"></script>
+</head>
+
+<body>
+    <header>
+        <div class="container nav-wrap">
+            <div class="logo">SaaSFlow.</div>
+            <nav id="nav-auth">
+                <!-- Nav mapped dynamically in app.js -->
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero container">
+            <span class="hero-pill">v2.0 is now live</span>
+            <h1>Monetize your app <br>in minutes.</h1>
+            <p>The ultimate Django & Stripe subscription boilerplate. Built for scale, designed for conversion.</p>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <a href="#pricing" class="btn btn-primary">View Pricing</a>
+                <a href="/register/" class="btn btn-secondary">Start Free Trial</a>
+            </div>
+        </section>
+
+        <section id="pricing" class="pricing-section glass-card"
+            style="margin: 0 auto 5rem; max-width: 1100px; border-radius: 24px; border: none;">
+            <div class="pricing-header">
+                <h2>Simple, transparent pricing</h2>
+                <p style="color: var(--color-text-secondary); margin-top: 0.5rem;">No hidden fees. Cancel anytime.</p>
+            </div>
+
+            <div class="pricing-grid">
+                <!-- Hobby Plan -->
+                <div class="pricing-card glass-card">
+                    <h3 class="plan-name">Hobby</h3>
+                    <div class="plan-price">$9<span>/mo</span></div>
+                    <ul class="plan-features">
+                        <li><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7"></path>
+                            </svg> Up to 1,000 users</li>
+                        <li><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7"></path>
+                            </svg> Basic Analytics</li>
+                        <li><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7"></path>
+                            </svg> 24-hour support</li>
+                    </ul>
+                    <button class="btn btn-secondary btn-block" onclick="handleCheckout(this, 1)">Get Started</button>
+                </div>
+
+                <!-- Pro Plan -->
+                <div class="pricing-card glass-card popular">
+                    <div class="popular-badge">Most Popular</div>
+                    <h3 class="plan-name">Pro</h3>
+                    <div class="plan-price">$29<span>/mo</span></div>
+                    <ul class="plan-features">
+                        <li><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7"></path>
+                            </svg> Unlimited users</li>
+                        <li><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7"></path>
+                            </svg> Advanced Analytics</li>
+                        <li><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7"></path>
+                            </svg> 1-hour support SLA</li>
+                        <li><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7"></path>
+                            </svg> Custom integrations</li>
+                    </ul>
+                    <button class="btn btn-primary btn-block" onclick="handleCheckout(this, 2)">Start 7-Day
+                        Trial</button>
+                </div>
+            </div>
+
+            <div class="alert alert-error" id="alert-error"
+                style="max-width: 600px; margin: 2rem auto 0; display:none;"></div>
+        </section>
+    </main>
+
+    <script>
+        async function handleCheckout(btn, dbPlanId) {
+            if (!window.api.isAuthenticated()) {
+                window.location.href = `/login/?redirect=${window.location.pathname}&checkout=${dbPlanId}`;
+                return;
+            }
+
+            setButtonLoading(btn, true);
+
+            try {
+                const data = await window.api.createCheckoutSession(dbPlanId);
+
+                if (data.checkout_url) {
+                    window.location.href = data.checkout_url;
+                } else {
+                    document.getElementById('alert-error').textContent = 'Failed to generate checkout link.';
+                    document.getElementById('alert-error').style.display = 'block';
+                    setButtonLoading(btn, false);
+                }
+            } catch (err) {
+                document.getElementById('alert-error').textContent = err.message || 'An error occurred during checkout.';
+                document.getElementById('alert-error').style.display = 'block';
+                setButtonLoading(btn, false);
+            }
+        }
+
+        // Auto-checkout if coming from login with intent
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const checkoutIntent = urlParams.get('checkout');
+            if (checkoutIntent && window.api.isAuthenticated()) {
+                // Find button mapping to intent and click it
+                const btn = document.querySelector(`button[onclick*="${checkoutIntent}"]`);
+                if (btn) btn.click();
+            }
+        });
+    </script>
+</body>
+
+</html>
