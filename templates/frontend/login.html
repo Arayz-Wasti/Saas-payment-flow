@@ -87,6 +87,19 @@
                 setButtonLoading(btn, false);
             }
         });
+
+        // Show success message if coming from registration
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('registered')) {
+                const el = document.getElementById('alert-error');
+                if (el) {
+                    el.textContent = 'Account created successfully! Please log in.';
+                    el.className = 'alert alert-success';
+                    el.style.display = 'block';
+                }
+            }
+        });
     </script>
 </body>
 

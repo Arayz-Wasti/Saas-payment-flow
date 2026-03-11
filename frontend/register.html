@@ -65,18 +65,8 @@
                 // Register
                 await window.api.register(email, password, company);
 
-                // Immediately login
-                const res = await window.api.request('/users/token/', {
-                    method: 'POST',
-                    body: { email, password },
-                    noAuth: true
-                });
-
-                localStorage.setItem('access_token', res.access);
-                localStorage.setItem('refresh_token', res.refresh);
-
-                // Send to index to pick a plan
-                window.location.href = 'index.html#pricing';
+                // Success! Redirect to login page
+                window.location.href = 'login.html?registered=true';
 
             } catch (err) {
                 document.getElementById('alert-error').textContent = err.message || 'Registration failed.';
