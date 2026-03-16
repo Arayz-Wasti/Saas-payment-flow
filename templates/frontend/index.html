@@ -24,12 +24,22 @@
 
     <main>
         <section class="hero container">
-            <span class="hero-pill">v2.0 is now live</span>
+            <span class="hero-pill" id="hero-pill">v2.0 is now live</span>
             <h1>Monetize your app <br>in minutes.</h1>
-            <p>The ultimate Django & Stripe subscription boilerplate. Built for scale, designed for conversion.</p>
-            <div style="display: flex; gap: 1rem; justify-content: center;">
+            <p id="hero-subtitle">The ultimate Django & Stripe subscription boilerplate. Built for scale, designed for conversion.</p>
+            
+            <div id="hero-trial-info" class="glass-card" style="display: none; max-width: 650px; margin: 0 auto 2rem; padding: 1.5rem; text-align: left; border-left: 4px solid var(--color-primary);">
+                <h4 style="color: var(--color-primary); margin-bottom: 0.5rem;">🎉 You're on a Free Trial!</h4>
+                <p style="font-size: 0.95rem; line-height: 1.6;">
+                    <strong>Why a Free Trial?</strong> We provide 7 days of full access so you can experience our premium infrastructure first-hand. 
+                    This allows you to test our high-performance analytics and custom integrations risk-free, ensuring SaaSFlow is the perfect fit for your business before you spend a dime.
+                </p>
+            </div>
+
+            <div id="hero-actions" style="display: flex; gap: 1rem; justify-content: center;">
+                <!-- Buttons will be rendered here based on auth status -->
                 <a href="#pricing" class="btn btn-primary">View Pricing</a>
-                <a href="/register/" class="btn btn-secondary">Start Free Trial</a>
+                <a href="/register/" class="btn btn-secondary" id="btn-hero-trial">Start Free Trial</a>
             </div>
         </section>
 
@@ -41,7 +51,8 @@
             </div>
 
             <div class="pricing-grid" id="pricing-grid">
-                <div style="text-align: center; padding: 2rem; color: var(--color-text-secondary); grid-column: 1 / -1;">
+                <div
+                    style="text-align: center; padding: 2rem; color: var(--color-text-secondary); grid-column: 1 / -1;">
                     <span class="spinner"></span> Loading plans...
                 </div>
             </div>
@@ -87,10 +98,34 @@
                     `;
                 }).join('');
 
+                // Update Hero Section based on Auth
+                const isAuth = window.api.isAuthenticated();
+                const heroActions = document.getElementById('hero-actions');
+                const heroTrialInfo = document.getElementById('hero-trial-info');
+
+                if (isAuth) {
+                    heroActions.innerHTML = `
+                        <a href="#pricing" class="btn btn-secondary">View Pricing</a>
+                        <a href="/dashboard/" class="btn btn-primary">Go to Dashboard</a>
+                    `;
+
+                    // Check for trial status
+                    try {
+                        const status = await window.api.getSubscriptionStatus();
+                        if (status.status === 'trialing') {
+                            heroTrialInfo.style.display = 'block';
+                            document.getElementById('hero-pill').textContent = 'Active Trial';
+                            document.getElementById('hero-subtitle').textContent = 'You are currently enjoying all premium features for free. Explore everything SaaSFlow has to offer!';
+                        }
+                    } catch (e) {
+                        console.error('Failed to fetch sub status for hero:', e);
+                    }
+                }
+
                 // Auto-checkout if redirected from login
                 const urlParams = new URLSearchParams(window.location.search);
                 const checkoutIntent = urlParams.get('checkout');
-                if (checkoutIntent && window.api.isAuthenticated()) {
+                if (checkoutIntent && isAuth) {
                     const btn = document.querySelector(`button[onclick*="${checkoutIntent}"]`);
                     if (btn) btn.click();
                 }

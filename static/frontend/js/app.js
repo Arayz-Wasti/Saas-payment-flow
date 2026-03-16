@@ -50,3 +50,13 @@ function requireAuth() {
         window.location.href = '/login/?redirect=' + encodeURIComponent(window.location.pathname);
     }
 }
+
+// Reset button states when page is shown (handles Back button / bfcache)
+window.addEventListener('pageshow', (event) => {
+    // We always reset on pageshow to be safe, especially if coming back from Stripe
+    document.querySelectorAll('.btn').forEach(btn => {
+        if (btn.disabled && btn.dataset.originalText) {
+            setButtonLoading(btn, false);
+        }
+    });
+});

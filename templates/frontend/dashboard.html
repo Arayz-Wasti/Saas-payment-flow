@@ -164,6 +164,15 @@
             </div>
         </div>
 
+        <!-- Trial Info Banner -->
+        <div id="ui-trial-info" class="glass-card" style="display: none; margin-bottom: 2rem; border-left: 4px solid var(--color-primary); padding: 1.5rem;">
+            <h4 style="color: var(--color-primary); margin-bottom: 0.5rem;">🚀 Welcome to your Pro Trial</h4>
+            <p style="font-size: 0.9rem; line-height: 1.5; color: var(--color-text-secondary);">
+                You're currently exploring SaaSFlow Pro. We offer this trial so you can experience our advanced analytics, 
+                high-speed infrastructure, and priority support first-hand. Enjoy 7 days of premium features on us!
+            </p>
+        </div>
+
         <!-- Stats Grid -->
         <div class="stats-grid">
             <div class="glass-card stat-card">
@@ -266,6 +275,10 @@
                     });
 
                     document.getElementById('btn-portal').classList.remove('hide');
+
+                    if (sub.status === 'trialing') {
+                        document.getElementById('ui-trial-info').style.display = 'block';
+                    }
                 } else {
                     document.getElementById('ui-plan').textContent = 'Free';
                     document.getElementById('ui-status').innerHTML = '<span class="badge badge-free">Free Tier</span>';

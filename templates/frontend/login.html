@@ -41,12 +41,26 @@
             </form>
 
             <div class="auth-footer">
-                Don't have an account? <a href="/register/">Sign up</a>
+                Don't have an account? <a href="/register/" id="link-register">Sign up</a>
             </div>
         </div>
     </main>
 
     <script>
+        // Preserve redirect/checkout context
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirect = urlParams.get('redirect');
+            const checkout = urlParams.get('checkout');
+            const regLink = document.getElementById('link-register');
+            if (regLink && (redirect || checkout)) {
+                const params = new URLSearchParams();
+                if (redirect) params.set('redirect', redirect);
+                if (checkout) params.set('checkout', checkout);
+                regLink.href = `/register/?${params.toString()}`;
+            }
+        });
+
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
 

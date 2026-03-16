@@ -45,12 +45,26 @@
             </form>
 
             <div class="auth-footer">
-                Already have an account? <a href="/login/">Log in</a>
+                Already have an account? <a href="/login/" id="link-login">Log in</a>
             </div>
         </div>
     </main>
 
     <script>
+        // Preserve redirect/checkout context
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirect = urlParams.get('redirect');
+            const checkout = urlParams.get('checkout');
+            const logLink = document.getElementById('link-login');
+            if (logLink && (redirect || checkout)) {
+                const params = new URLSearchParams();
+                if (redirect) params.set('redirect', redirect);
+                if (checkout) params.set('checkout', checkout);
+                logLink.href = `/login/?${params.toString()}`;
+            }
+        });
+
         document.getElementById('register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -66,8 +80,14 @@
                 // Register
                 await window.api.register(email, password, company);
 
-                // Success! Redirect to login page
-                window.location.href = '/login/?registered=true';
+                // Success! Redirect with preserved params
+                const urlParams = new URLSearchParams(window.location.search);
+                const redirect = urlParams.get('redirect');
+                const checkout = urlParams.get('checkout');
+                let loginUrl = '/login/?registered=true';
+                if (redirect) loginUrl += `&redirect=${encodeURIComponent(redirect)}`;
+                if (checkout) loginUrl += `&checkout=${encodeURIComponent(checkout)}`;
+                window.location.href = loginUrl;
 
             } catch (err) {
                 console.error('Registration failed:', err);
