@@ -40,53 +40,9 @@
                 <p style="color: var(--color-text-secondary); margin-top: 0.5rem;">No hidden fees. Cancel anytime.</p>
             </div>
 
-            <div class="pricing-grid">
-                <!-- Hobby Plan -->
-                <div class="pricing-card glass-card">
-                    <h3 class="plan-name">Hobby</h3>
-                    <div class="plan-price">$9<span>/mo</span></div>
-                    <ul class="plan-features">
-                        <li><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M5 13l4 4L19 7"></path>
-                            </svg> Up to 1,000 users</li>
-                        <li><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M5 13l4 4L19 7"></path>
-                            </svg> Basic Analytics</li>
-                        <li><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M5 13l4 4L19 7"></path>
-                            </svg> 24-hour support</li>
-                    </ul>
-                    <button class="btn btn-secondary btn-block" onclick="handleCheckout(this, 1)">Get Started</button>
-                </div>
-
-                <!-- Pro Plan -->
-                <div class="pricing-card glass-card popular">
-                    <div class="popular-badge">Most Popular</div>
-                    <h3 class="plan-name">Pro</h3>
-                    <div class="plan-price">$29<span>/mo</span></div>
-                    <ul class="plan-features">
-                        <li><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M5 13l4 4L19 7"></path>
-                            </svg> Unlimited users</li>
-                        <li><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M5 13l4 4L19 7"></path>
-                            </svg> Advanced Analytics</li>
-                        <li><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M5 13l4 4L19 7"></path>
-                            </svg> 1-hour support SLA</li>
-                        <li><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M5 13l4 4L19 7"></path>
-                            </svg> Custom integrations</li>
-                    </ul>
-                    <button class="btn btn-primary btn-block" onclick="handleCheckout(this, 2)">Start 7-Day
-                        Trial</button>
+            <div class="pricing-grid" id="pricing-grid">
+                <div style="text-align: center; padding: 2rem; color: var(--color-text-secondary); grid-column: 1 / -1;">
+                    <span class="spinner"></span> Loading plans...
                 </div>
             </div>
 
@@ -96,6 +52,54 @@
     </main>
 
     <script>
+        // Fetch and render pricing plans from the API
+        document.addEventListener('DOMContentLoaded', async () => {
+            const grid = document.getElementById('pricing-grid');
+
+            try {
+                const plans = await window.api.getPlans();
+
+                if (!plans || plans.length === 0) {
+                    grid.innerHTML = '<p style="text-align:center; color:var(--color-text-secondary); grid-column: 1/-1;">No plans available at this time.</p>';
+                    return;
+                }
+
+                grid.innerHTML = plans.map((plan, i) => {
+                    const isPopular = i === plans.length - 1;
+                    const features = plan.features && typeof plan.features === 'object'
+                        ? Object.values(plan.features)
+                        : [];
+                    const checkSvg = '<svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                    const featureItems = features.map(f => `<li>${checkSvg} ${f}</li>`).join('');
+                    const intervalLabel = plan.interval === 'year' ? '/yr' : '/mo';
+                    const priceDisplay = `$${Math.round(plan.price)}`;
+                    const btnClass = isPopular ? 'btn btn-primary btn-block' : 'btn btn-secondary btn-block';
+                    const btnText = plan.trial_days > 0 ? `Start ${plan.trial_days}-Day Trial` : 'Get Started';
+
+                    return `
+                        <div class="pricing-card glass-card${isPopular ? ' popular' : ''}">
+                            ${isPopular ? '<div class="popular-badge">Most Popular</div>' : ''}
+                            <h3 class="plan-name">${plan.name}</h3>
+                            <div class="plan-price">${priceDisplay}<span>${intervalLabel}</span></div>
+                            <ul class="plan-features">${featureItems}</ul>
+                            <button class="${btnClass}" onclick="handleCheckout(this, ${plan.id})">${btnText}</button>
+                        </div>
+                    `;
+                }).join('');
+
+                // Auto-checkout if redirected from login
+                const urlParams = new URLSearchParams(window.location.search);
+                const checkoutIntent = urlParams.get('checkout');
+                if (checkoutIntent && window.api.isAuthenticated()) {
+                    const btn = document.querySelector(`button[onclick*="${checkoutIntent}"]`);
+                    if (btn) btn.click();
+                }
+            } catch (err) {
+                grid.innerHTML = '<p style="text-align:center; color:var(--color-text-secondary); grid-column: 1/-1;">Failed to load plans. Please refresh.</p>';
+                console.error('Failed to load plans:', err);
+            }
+        });
+
         async function handleCheckout(btn, dbPlanId) {
             if (!window.api.isAuthenticated()) {
                 window.location.href = `/login/?redirect=${window.location.pathname}&checkout=${dbPlanId}`;
@@ -120,17 +124,6 @@
                 setButtonLoading(btn, false);
             }
         }
-
-        // Auto-checkout if coming from login with intent
-        document.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const checkoutIntent = urlParams.get('checkout');
-            if (checkoutIntent && window.api.isAuthenticated()) {
-                // Find button mapping to intent and click it
-                const btn = document.querySelector(`button[onclick*="${checkoutIntent}"]`);
-                if (btn) btn.click();
-            }
-        });
     </script>
 </body>
 

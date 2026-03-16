@@ -35,6 +35,7 @@ def api_root(request, format=None):
             "profile": reverse('user_profile', request=request, format=format),
         },
         "subscriptions": {
+            "plans": reverse('plan_list', request=request, format=format),
             "status": reverse('subscription_status', request=request, format=format),
             "verify": reverse('verify_checkout', request=request, format=format),
         },

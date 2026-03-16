@@ -169,6 +169,10 @@ const api = {
 
     async getSubscriptionStatus() {
         return this.request('/payments/subscription-status/', { method: 'GET' });
+    },
+
+    async getPlans() {
+        return this.request('/subscriptions/plans/', { method: 'GET', noAuth: true });
     }
 };
 

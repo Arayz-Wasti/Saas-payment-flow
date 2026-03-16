@@ -79,27 +79,32 @@ TEMPLATES: list[dict] = [
 WSGI_APPLICATION: str = 'config.wsgi.application'
 
 # ─── Database Configuration ──────────────────────────────────────
+_database_url = config('DATABASE_URL', default=None)
 DB_ENGINE = config('DB_ENGINE', default='sqlite')
 
-if DB_ENGINE == 'postgresql' or config('DATABASE_URL', default=None):
+if _database_url:
+    # Railway / production: use DATABASE_URL
     DATABASES = {
         'default': dj_database_url.config(
-            default=config('DATABASE_URL', default=''),
+            default=_database_url,
             conn_max_age=600,
             conn_health_checks=True,
         )
     }
-    # Fallback to explicit env vars if DATABASE_URL is somehow not parsed correctly but vars are there
-    if not DATABASES['default'].get('NAME'):
-         DATABASES['default'] = {
+elif DB_ENGINE == 'postgresql':
+    # Explicit PostgreSQL from env vars
+    DATABASES = {
+        'default': {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': config('DB_NAME', default='saas_db'),
             'USER': config('DB_USER', default='postgres'),
-            'PASSWORD': config('DB_PASSWORD', default='postgres'),
+            'PASSWORD': config('DB_PASSWORD', default=''),
             'HOST': config('DB_HOST', default='localhost'),
             'PORT': config('DB_PORT', default='5432'),
         }
+    }
 else:
+    # Local development fallback
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -166,9 +171,8 @@ SIMPLE_JWT: dict = {
 }
 
 # ─── CORS Configuration ──────────────────────────────────────────
-CORS_ALLOWED_ORIGINS: list[str] = [
-    config('FRONTEND_URL', default='http://localhost:3000'),
-]
+_frontend_origin = config('FRONTEND_URL', default='')
+CORS_ALLOWED_ORIGINS: list[str] = [_frontend_origin] if _frontend_origin else []
 CORS_ALLOW_ALL_ORIGINS: bool = config('DJANGO_DEBUG', default=False, cast=bool)
 
 # ─── Stripe Configuration ────────────────────────────────────────
@@ -177,7 +181,8 @@ STRIPE_PUBLIC_KEY: str = config('STRIPE_PUBLIC_KEY', default='')
 STRIPE_WEBHOOK_SECRET: str = config('STRIPE_WEBHOOK_SECRET', default='')
 
 # ─── Frontend URL ────────────────────────────────────────────────
-FRONTEND_URL: str = config('FRONTEND_URL', default='http://localhost:3000')
+# Same-origin default since Django serves the frontend templates.
+FRONTEND_URL: str = config('FRONTEND_URL', default='')
 
 # ─── Production Security Settings ──────────────────────────────────
 if not DEBUG:

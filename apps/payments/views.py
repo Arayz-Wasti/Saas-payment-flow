@@ -30,8 +30,10 @@ class CreateCheckoutSessionView(views.APIView):
 
         try:
             plan = Plan.objects.get(id=plan_id, is_active=True)
-            success_url = f"{settings.FRONTEND_URL}/dashboard.html?session_id={{CHECKOUT_SESSION_ID}}"
-            cancel_url = f"{settings.FRONTEND_URL}/index.html#pricing"
+            
+            # Stripe requires absolute URLs
+            success_url = request.build_absolute_uri('/dashboard/') + "?session_id={CHECKOUT_SESSION_ID}"
+            cancel_url = request.build_absolute_uri('/#pricing')
 
             checkout_url = StripeService.create_checkout_session(
                 user=request.user,
@@ -147,7 +149,7 @@ class BillingPortalView(views.APIView):
 
     def post(self, request):
         try:
-            return_url = f"{settings.FRONTEND_URL}/dashboard.html"
+            return_url = request.build_absolute_uri('/dashboard/')
             portal_url = StripeService.create_billing_portal_session(
                 user=request.user,
                 return_url=return_url

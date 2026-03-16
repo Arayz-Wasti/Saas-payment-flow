@@ -1,5 +1,6 @@
 from django.urls import path
+from .views import PlanListView
 
 urlpatterns = [
-    # Placeholder for Phase 2
+    path('plans/', PlanListView.as_view(), name='plan_list'),
 ]
