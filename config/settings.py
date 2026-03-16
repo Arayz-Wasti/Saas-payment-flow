@@ -19,6 +19,10 @@ SECRET_KEY: str = config('DJANGO_SECRET_KEY')
 DEBUG: bool = config('DJANGO_DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS: list[str] = config('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1,*.railway.app', cast=Csv())
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.railway.app",
+]
+
 # ─── Application Definition ──────────────────────────────────────
 INSTALLED_APPS: list[str] = [
     # Django built-in
