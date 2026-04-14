@@ -17,10 +17,16 @@ BASE_DIR: Path = Path(__file__).resolve().parent.parent
 # ─── Security ─────────────────────────────────────────────────────
 SECRET_KEY: str = config('DJANGO_SECRET_KEY')
 DEBUG: bool = config('DJANGO_DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS: list[str] = config('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1,*.railway.app', cast=Csv())
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    ".railway.app",
+    "saas-payment-flow.up.railway.app",
+]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://*.railway.app",
+    "https://saas-payment-flow.up.railway.app",
 ]
 
 # ─── Application Definition ──────────────────────────────────────
